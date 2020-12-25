@@ -68,17 +68,17 @@ void execMotorCMD(char cmd)
 {
   digitalWrite(EN_PIN_1, HIGH);
 
-  if (cmd == '0')
-  {
-    Stop();
-  }
-  else if (cmd == '1')
+  if (cmd == '1')
   {
     Forward();
   }
   else if (cmd == '2')
   {
     Reverse();
+  }
+  else if (cmd == '3')
+  {
+    Stop();
   }
   else if (cmd == '+')
   {
