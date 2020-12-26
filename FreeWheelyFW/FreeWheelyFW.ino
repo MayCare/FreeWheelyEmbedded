@@ -1,8 +1,16 @@
 #include <SoftwareSerial.h>
+#include <avr/wdt.h>
 
 /*
  * MOTOR
  */
+#define CMD_FORWARD   '1' 
+#define CMD_REVERSE   '2'
+#define CMD_STOP      '3'
+#define CMD_INC_SPEED '+'
+#define CMD_DEC_SPEED '-'
+#define CMD_KEEPALIVE '9'
+ 
 #define BRAKE 0
 #define CW    1
 #define CCW   2
@@ -13,6 +21,7 @@
 #define PWM_MOTOR_1   5
 #define EN_PIN_1      A0
 
+bool isFirstCmd = true;
 short usSpeed = 150;  //default motor speed
 unsigned short usMotor_Status = BRAKE;
 
@@ -25,6 +34,7 @@ char msg = 0;
 
 
 void setup() {
+  wdt_disable();
   Serial.begin(9600);
   ble_setUp();
   motor_setUp();
@@ -33,9 +43,9 @@ void setup() {
   pinMode(LED, OUTPUT);
   for (int i = 0 ; i < 20; i++) {
     digitalWrite(LED, HIGH);
-    delay(300);
+    delay(100);
     digitalWrite(LED, LOW);
-    delay(300);
+    delay(100);
   }
 }
 
@@ -47,6 +57,10 @@ void loop()
     Serial.println(msg);
 
     execMotorCMD(msg);
+    if(isFirstCmd) {
+      startWD();
+      isFirstCmd = false;
+    }
   }
 }
 
@@ -61,36 +75,48 @@ void motor_setUp() {
   pinMode(PWM_MOTOR_1, OUTPUT);
   pinMode(EN_PIN_1, OUTPUT);
 
+  execMotorCMD(CMD_STOP);
   Serial.println("Begin motor control");
+}
+
+void startWD() {
+  // make a delay before enable WDT
+  // this delay help to complete all initial tasks
+  delay(2000);
+  wdt_enable(WDTO_2S);
 }
 
 void execMotorCMD(char cmd)
 {
   digitalWrite(EN_PIN_1, HIGH);
 
-  if (cmd == '1')
+  if (cmd == CMD_FORWARD)
   {
     Forward();
   }
-  else if (cmd == '2')
+  else if (cmd == CMD_REVERSE)
   {
     Reverse();
   }
-  else if (cmd == '3')
+  else if (cmd == CMD_STOP)
   {
     Stop();
   }
-  else if (cmd == '+')
+  else if (cmd == CMD_INC_SPEED)
   {
     IncreaseSpeed();
   }
-  else if (cmd == '-')
+  else if (cmd == CMD_DEC_SPEED)
   {
     DecreaseSpeed();
   }
+  else if (cmd == CMD_KEEPALIVE)
+  {
+    wdt_reset();
+  }
   else
   {
-    Serial.println("Invalid option entered.");
+    Serial.println("Invalid option entered");
   }
 }
 
